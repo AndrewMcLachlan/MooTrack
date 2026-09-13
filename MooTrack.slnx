@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MooTrack.Derivation/MooTrack.Derivation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MooTrack.Derivation.Tests/MooTrack.Derivation.Tests.csproj" />
+  </Folder>
+</Solution>
