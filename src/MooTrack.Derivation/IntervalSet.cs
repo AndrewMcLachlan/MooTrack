@@ -26,15 +26,26 @@ public static class IntervalSet
 
 
     public static IReadOnlyList<Interval> Bridge(
-        IEnumerable<Interval> intervals, TimeSpan threshold)
+        IEnumerable<Interval> intervals, TimeSpan threshold) =>
+        Bridge(intervals, threshold, []);
+
+    public static IReadOnlyList<Interval> Bridge(
+        IEnumerable<Interval> intervals, TimeSpan threshold,
+        IEnumerable<DateTimeOffset> hardBoundaries)
     {
+        var boundaries = hardBoundaries.ToList();
         var result = new List<Interval>();
+
         foreach (var span in Merge(intervals))
         {
-            if (result.Count > 0 && span.Start - result[^1].End < threshold)
-                result[^1] = result[^1] with { End = span.End };
+            var joinable = result.Count > 0
+                && span.Start - result[^1].End < threshold
+                && !boundaries.Any(at => at >= result[^1].End && at <= span.Start);
+
+            if (joinable) result[^1] = result[^1] with { End = span.End };
             else result.Add(span);
         }
+
         return result;
     }
 

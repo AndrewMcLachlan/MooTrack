@@ -73,14 +73,27 @@ so fixture and live data traverse identical algebra.
 ## Gaps and quality
 
 Absence of ticks is positive evidence the recorder was down, and is the only
-thing distinguishing downtime from a break. A tick run missing for longer than
-`GapTolerance` becomes an explicit gap: never billed, and the day is flagged.
+thing distinguishing downtime from a break. Coverage is derived from `Tick`
+observations **alone** — a quiet period between real events is not evidence of an
+outage, and treating it as one discards real hours. A tick run missing for longer
+than `TickInterval + GapTolerance` becomes an explicit gap: never billed.
+
+Coverage is judged against the **working day**, not the calendar day. A recorder
+idle overnight says nothing about whether the day's hours are evidenced, so a gap
+falling entirely outside the day's first-to-last span contributes nothing. A gap
+that opens at or before the day's last activity counts to its full length,
+including past the span: it leaves the end of that day unevidenced, and where the
+day truly ended is exactly what is then unknown.
 
 | Flag | Meaning |
 |---|---|
-| `Complete` | recorder covered the whole day |
+| `Complete` | no gap intrudes on the working day |
 | `Partial` | gaps present, quantified in `UnaccountedMinutes` |
-| `Unreliable` | gaps exceed a third of the day's span |
+| `Unreliable` | unaccounted time exceeds a third of the day's span |
+
+A day with no activity but an overlapping gap is still reported, with zero hours
+and `Unreliable`. A day the recorder missed must not silently vanish from a tax
+record.
 
 The engine never interpolates. Ambiguous input produces a flagged day, never a
 guessed number.
@@ -125,8 +138,29 @@ edit the CSV.
 
 ## Output
 
-Daily CSV (matching the existing column shape), weekly rollup, and an Excel
-workbook via ClosedXML. Written to temp and atomically replaced.
+Daily CSV, weekly rollup, and a three-sheet Excel workbook via ClosedXML (Daily,
+Weekly, Method). Each is written to a temporary file and atomically replaced; a
+workbook held open by Excel fails with a message naming the file rather than
+truncating it.
+
+    date,weekday,first_active,last_active,span_hours,active_hours,away_hours,
+    sessions,longest_break_min,fringe_sessions,quality,unaccounted_min
+
+    iso_week,week_start,active_hours,days_with_activity,mean_hours_per_day,
+    total_span_hours,partial_days,unreliable_days
+
+Times are written at second precision. The validation CSV is minute-resolution,
+so the acceptance comparison truncates.
+
+The Method sheet records the parameter set that produced the figures.
+
+## CLI
+
+    mootrack --sleepstudy <report.html> --out <dir> [options]
+    mootrack --ndjson <file-or-dir> --out <dir> [options]
+
+`--offset`, `--bridge`, `--confirm`, `--fringe-max`, `--fringe-gap`,
+`--gap-tolerance` and `--bridge-across-lock` override the defaults above.
 
 ## Not doing
 

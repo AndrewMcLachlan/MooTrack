@@ -13,7 +13,8 @@ public class AcceptanceTests
         return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
     }
 
-    static TimeOnly ToMinute(TimeOnly value) => new(value.Hour, value.Minute);
+    static TimeOnly? ToMinute(TimeOnly? value) =>
+        value is { } t ? new TimeOnly(t.Hour, t.Minute) : null;
 
     static string Fixture(string name) => Path.Combine(RepoRoot(), "docs", "data", name);
 
@@ -33,12 +34,12 @@ public class AcceptanceTests
                 DateOnly.Parse(f[0], CultureInfo.InvariantCulture),
                 TimeOnly.Parse(f[2], CultureInfo.InvariantCulture),
                 TimeOnly.Parse(f[3], CultureInfo.InvariantCulture),
-                decimal.Parse(f[4], CultureInfo.InvariantCulture),
-                decimal.Parse(f[5], CultureInfo.InvariantCulture),
-                decimal.Parse(f[6], CultureInfo.InvariantCulture),
-                int.Parse(f[7], CultureInfo.InvariantCulture),
-                (int)decimal.Parse(f[8], CultureInfo.InvariantCulture),
-                int.Parse(f[9], CultureInfo.InvariantCulture));
+                Decimal.Parse(f[4], CultureInfo.InvariantCulture),
+                Decimal.Parse(f[5], CultureInfo.InvariantCulture),
+                Decimal.Parse(f[6], CultureInfo.InvariantCulture),
+                Int32.Parse(f[7], CultureInfo.InvariantCulture),
+                (int)Decimal.Parse(f[8], CultureInfo.InvariantCulture),
+                Int32.Parse(f[9], CultureInfo.InvariantCulture));
         })];
     }
 
@@ -74,6 +75,6 @@ public class AcceptanceTests
 
         Assert.True(mismatches.Count == 0,
             $"{mismatches.Count} of {expected.Count} days differ:"
-            + Environment.NewLine + string.Join(Environment.NewLine, mismatches));
+            + Environment.NewLine + String.Join(Environment.NewLine, mismatches));
     }
 }

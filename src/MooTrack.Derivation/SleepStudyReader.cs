@@ -45,7 +45,7 @@ public static partial class SleepStudyReader
 
     // Duration is in 100ns ticks; a wrong unit here silently rescales every day's hours.
     static TimeSpan Ticks(string value) =>
-        TimeSpan.FromTicks((long)double.Parse(value, CultureInfo.InvariantCulture));
+        TimeSpan.FromTicks((long)Double.Parse(value, CultureInfo.InvariantCulture));
 
     [GeneratedRegex(@"(\w+)=""([^""]*)""")]
     private static partial Regex AttributePattern();
