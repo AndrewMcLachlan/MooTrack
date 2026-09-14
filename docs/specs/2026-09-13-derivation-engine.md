@@ -133,7 +133,7 @@ The full multi-signal model is then compared to that baseline as a **measured
 delta, not a match**. That delta is the break time the display-only method
 over-billed, and reporting it is itself useful.
 
-Per the brief: if the model disagrees with the CSV, the model is wrong. Do not
+If the model disagrees with the CSV, the model is wrong. Do not
 edit the CSV.
 
 ## Output

@@ -8,7 +8,7 @@ Everything here is ignored by git except this file.
 
 ## What belongs here
 
-    daily-hours.csv                 19 weekdays at session precision — the acceptance set
+    daily-hours.csv                 weekdays at session precision — the acceptance set
     weekly-hours.csv                two-year weekly series with quality flags
     weekly-hours-sleepstudy.csv     four-week rollup from the sleep study
     raw/sleepstudy28.html           28-day sleep study, XML embedded in HTML
@@ -19,7 +19,7 @@ Everything here is ignored by git except this file.
 ## Why it matters
 
 `daily-hours.csv` is the acceptance test. The derivation engine, run in
-display-only mode over `raw/sleepstudy28.html`, must reproduce all 20 of its rows
+display-only mode over the sleep study report, must reproduce every one of its rows
 exactly. If the model disagrees with the CSV, the model is wrong — do not edit the
 CSV to match.
 
@@ -29,8 +29,10 @@ and hold the model to it.
 
 ## Regenerating
 
-The sleep study window has already rolled past 2026-08-17, so that file cannot be
-recreated. Weekly battery history survives for years; sleep study data does not.
+A sleep study only ever reaches back 28 days, so the earliest day in a captured
+report drops out of a fresh run one day at a time. What falls off the front is gone
+for good, so regenerate early and often. Weekly battery history survives for years;
+sleep study data does not.
 
     powercfg /sleepstudy    /output "%TEMP%\sleepstudy.html" /duration 28
     powercfg /batteryreport /output "%TEMP%\battery.html"
