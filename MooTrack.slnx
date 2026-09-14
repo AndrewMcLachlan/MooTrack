@@ -1,9 +1,24 @@
 <Solution>
+  <Folder Name="/Config/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="LICENSE" />
+  </Folder>
+  <Folder Name="/installer/">
+    <Project Path="installer/MooTrack.Installer.wixproj" Type="b7dd6f7e-def8-4e67-b5b7-07ef123db6f0">
+      <Platform Solution="Release|*" Project="x64" />
+    </Project>
+  </Folder>
   <Folder Name="/src/">
+    <Project Path="src/MooTrack.Agent/MooTrack.Agent.csproj" />
     <Project Path="src/MooTrack.Cli/MooTrack.Cli.csproj" />
+    <Project Path="src/MooTrack.Collector/MooTrack.Collector.csproj" />
     <Project Path="src/MooTrack.Derivation/MooTrack.Derivation.csproj" />
+    <Project Path="src/MooTrack.Reporting/MooTrack.Reporting.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/MooTrack.Agent.Tests/MooTrack.Agent.Tests.csproj" />
+    <Project Path="tests/MooTrack.Collector.Tests/MooTrack.Collector.Tests.csproj" />
     <Project Path="tests/MooTrack.Derivation.Tests/MooTrack.Derivation.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package Name="MooTrack Agent"
+           Manufacturer="Andrew McLachlan"
+           Version="1.0.0.0"
+           UpgradeCode="9eb51b90-63f1-4250-8d12-0be357edcb05"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MooTrack Agent is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Launch Condition="Installed OR VersionNT64"
+            Message="MooTrack Agent requires 64-bit Windows." />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="MooTrack" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATAFOLDER" Name="MooTrack">
+        <Directory Id="JOURNALFOLDER" Name="journal" />
+      </Directory>
+    </StandardDirectory>
+
+    <ComponentGroup Id="AgentFiles" Directory="INSTALLFOLDER">
+
+      <Component Id="AgentExecutable" Guid="301d397b-39e3-438a-bbdb-81cccc8622e9" Bitness="always64">
+        <File Id="MooTrackAgentExe"
+              Source="$(PublishDir)MooTrack.Agent.exe"
+              KeyPath="yes" />
+
+        <ServiceInstall Id="MooTrackService"
+                        Name="MooTrack"
+                        DisplayName="MooTrack working hours capture"
+                        Description="Records screen-on, user presence and session events for working-hours substantiation."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="LocalSystem"
+                        Vital="yes">
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="60"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+
+        <ServiceControl Id="MooTrackServiceControl"
+                        Name="MooTrack"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
+      </Component>
+
+      <Component Id="AgentConfiguration" Guid="50aece66-1e73-4fde-840a-981f105fc6f0" Bitness="always64">
+        <File Id="AppSettingsJson"
+              Source="$(PublishDir)appsettings.json"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- Creating the source at install time means the service never has to create
+           it on first run, when a failure would surface as a service that will not start. -->
+      <Component Id="EventSourceRegistration" Guid="f99bd35e-b2c1-4d07-a854-e98fdb5b8497" Bitness="always64">
+        <RegistryValue Root="HKLM" Key="Software\MooTrack" Name="EventSourceCreated"
+                       Type="integer" Value="1" KeyPath="yes" />
+        <util:EventSource Log="Application"
+                          Name="MooTrack"
+                          EventMessageFile="%SystemRoot%\System32\EventCreate.exe" />
+      </Component>
+
+    </ComponentGroup>
+
+    <ComponentGroup Id="AgentData">
+      <!-- The journal is the substantiation record and outlives the software.
+           Uninstalling must never remove it. -->
+      <Component Id="JournalDirectory" Directory="JOURNALFOLDER"
+                 Guid="5192c3d3-8fcb-4586-9f06-8412dd59dcc8" Bitness="always64"
+                 Permanent="yes">
+        <CreateFolder />
+        <RegistryValue Root="HKLM" Key="Software\MooTrack" Name="JournalCreated"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="Main" Title="MooTrack Agent" Level="1">
+      <ComponentGroupRef Id="AgentFiles" />
+      <ComponentGroupRef Id="AgentData" />
+    </Feature>
+
+  </Package>
+</Wix>

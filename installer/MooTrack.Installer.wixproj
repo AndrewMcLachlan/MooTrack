@@ -1,0 +1,23 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+
+  <PropertyGroup>
+    <OutputName>MooTrack</OutputName>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <PublishDir>$(MSBuildThisFileDirectory)..\artifacts\agent\</PublishDir>
+    <DefineConstants>PublishDir=$(PublishDir)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="6.0.2" />
+  </ItemGroup>
+
+  <!-- Publishing here rather than as a separate step means the package can never
+       be built from a stale executable, which nothing downstream would detect. -->
+  <Target Name="PublishAgent" BeforeTargets="BeforeBuild">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\src\MooTrack.Agent\MooTrack.Agent.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=win-x64;SelfContained=true;PublishSingleFile=true;IncludeNativeLibrariesForSelfExtract=true;PublishDir=$(PublishDir)" />
+  </Target>
+
+</Project>

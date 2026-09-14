@@ -1,0 +1,26 @@
+# the NAS (Synology DS918+, Container Manager).
+#
+# Verify the bind mount actually attached before trusting a day of data:
+#   docker inspect mootrack-collector --format '{{json .Mounts}}'
+#   curl -s http://collector:8088/health
+# The mountProbe value in /health must also be visible on the NAS share itself.
+services:
+  collector:
+    image: ghcr.io/andrewmclachlan/mootrack-collector:latest
+    container_name: mootrack-collector
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      MOOTRACK_API_KEY: "${MOOTRACK_API_KEY:?set MOOTRACK_API_KEY}"
+      MooTrack__RawRoot: /data/raw
+      MooTrack__ReportRoot: /data/reports
+      MooTrack__MirrorRoot: /mirror/raw
+      MooTrack__RegenerateDebounceSeconds: "60"
+    volumes:
+      - /volume1/mootrack/raw:/data/raw
+      - /volume1/mootrack/reports:/data/reports
+      - mirror:/mirror
+
+volumes:
+  mirror:
