@@ -68,7 +68,7 @@ public static class IntervalSet
         return result;
     }
 
-    static List<Interval> Merge(IEnumerable<Interval> intervals)
+    private static List<Interval> Merge(IEnumerable<Interval> intervals)
     {
         var merged = new List<Interval>();
         foreach (var span in intervals.Where(i => i.End > i.Start).OrderBy(i => i.Start))

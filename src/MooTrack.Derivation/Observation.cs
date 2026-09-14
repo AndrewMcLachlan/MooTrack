@@ -11,6 +11,8 @@ public enum ObservedEvent
     Suspend,
     Resume,
     Shutdown,
+    AgentStarted,
+    AgentStopped,
     Tick,
     Gap,
 }

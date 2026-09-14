@@ -5,26 +5,16 @@ namespace MooTrack.Derivation.Tests;
 
 public class AcceptanceTests
 {
-    static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "docs", "data")))
-            dir = dir.Parent;
-        return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
-    }
-
-    static TimeOnly? ToMinute(TimeOnly? value) =>
+    private static TimeOnly? ToMinute(TimeOnly? value) =>
         value is { } t ? new TimeOnly(t.Hour, t.Minute) : null;
 
-    static string Fixture(string name) => Path.Combine(RepoRoot(), "docs", "data", name);
-
-    sealed record ExpectedDay(
+    private sealed record ExpectedDay(
         DateOnly Date, TimeOnly First, TimeOnly Last, decimal Span,
         decimal Active, decimal Away, int Sessions, int LongestBreak, int Fringe);
 
-    static IReadOnlyList<ExpectedDay> ReadValidationSet()
+    private static IReadOnlyList<ExpectedDay> ReadValidationSet()
     {
-        var path = Fixture("daily-hours.csv");
+        var path = ValidationData.Path("daily-hours.csv");
         Assert.True(File.Exists(path), $"validation set missing: {path}");
 
         return [.. File.ReadAllLines(path).Skip(1).Where(l => l.Length > 0).Select(line =>
@@ -43,10 +33,10 @@ public class AcceptanceTests
         })];
     }
 
-    [Fact]
+    [ValidationDataFact]
     public void DisplayOnlyModel_ReproducesValidationSet()
     {
-        var report = Fixture(Path.Combine("raw", "sleepstudy28.html"));
+        var report = ValidationData.Path("raw", "sleepstudy28.html");
         Assert.True(File.Exists(report), $"acceptance fixture missing: {report}");
 
         var active = SleepStudyReader.ReadActiveIntervals(report, TimeSpan.Zero);

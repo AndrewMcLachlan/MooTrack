@@ -4,16 +4,16 @@ namespace MooTrack.Derivation.Tests;
 
 public class WorkIntervalTests
 {
-    static readonly TimeSpan Offset = TimeSpan.FromHours(10);
-    static readonly DerivationOptions Defaults = new();
+    private static readonly TimeSpan Offset = TimeSpan.FromHours(10);
+    private static readonly DerivationOptions Defaults = new();
 
-    static DateTimeOffset At(int hour, int minute = 0) =>
+    private static DateTimeOffset At(int hour, int minute = 0) =>
         new(2026, 8, 17, hour, minute, 0, Offset);
 
-    static Observation Seen(ObservedEvent observed, DateTimeOffset at) =>
+    private static Observation Seen(ObservedEvent observed, DateTimeOffset at) =>
         new() { Timestamp = at, UnbiasedMs = 0, Event = observed };
 
-    static IReadOnlyList<Interval> Active(params Observation[] observations) =>
+    private static IReadOnlyList<Interval> Active(params Observation[] observations) =>
         WorkIntervals.Build(observations, Defaults).Active;
 
     [Fact]
@@ -123,5 +123,22 @@ public class WorkIntervalTests
         ], Defaults with { BridgeAcrossLock = true });
 
         Assert.Equal([new Interval(At(9), At(17))], timeline.Active);
+    }
+
+    [Fact]
+    public void Build_AgentRestartWhileLocked_DoesNotEndTheBreakEarly()
+    {
+        var active = Active(
+            Seen(ObservedEvent.DisplayOn, At(9)),
+            Seen(ObservedEvent.UserPresent, At(9)),
+            Seen(ObservedEvent.Lock, At(12)),
+            Seen(ObservedEvent.AgentStopped, At(12, 30)),
+            Seen(ObservedEvent.AgentStarted, At(12, 30)),
+            Seen(ObservedEvent.Unlock, At(13)),
+            Seen(ObservedEvent.DisplayOff, At(17)));
+
+        Assert.Equal(
+            [new Interval(At(9), At(12)), new Interval(At(13), At(17))],
+            active);
     }
 }

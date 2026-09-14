@@ -28,7 +28,7 @@ public static class DailyReport
         ];
     }
 
-    static DayRecord BuildDay(
+    private static DayRecord BuildDay(
         DateOnly date, IReadOnlyList<Interval> sessions, IReadOnlyList<Interval> gaps,
         DerivationOptions options)
     {
@@ -61,7 +61,7 @@ public static class DailyReport
         };
     }
 
-    static DayRecord Silent(DateOnly date, TimeSpan unaccounted) =>
+    private static DayRecord Silent(DateOnly date, TimeSpan unaccounted) =>
         new()
         {
             Date = date,
@@ -81,7 +81,7 @@ public static class DailyReport
     // idle overnight says nothing about whether the day's hours are evidenced. A gap
     // that opens before the day's last activity is counted to its full length, since
     // it leaves the end of that day unevidenced.
-    static TimeSpan Overlap(IEnumerable<Interval> gaps, Interval span) =>
+    private static TimeSpan Overlap(IEnumerable<Interval> gaps, Interval span) =>
         gaps.Aggregate(TimeSpan.Zero, (sum, gap) =>
         {
             if (gap.Start > span.End) return sum;
@@ -89,17 +89,17 @@ public static class DailyReport
             return gap.End > start ? sum + (gap.End - start) : sum;
         });
 
-    static DayQuality Rate(TimeSpan unaccounted, TimeSpan span) =>
+    private static DayQuality Rate(TimeSpan unaccounted, TimeSpan span) =>
         unaccounted <= TimeSpan.Zero ? DayQuality.Complete
         : unaccounted.TotalMinutes * 3 > span.TotalMinutes ? DayQuality.Unreliable
         : DayQuality.Partial;
 
-    static int Minutes(TimeSpan span) =>
+    private static int Minutes(TimeSpan span) =>
         (int)Math.Round(span.TotalMinutes, MidpointRounding.ToEven);
 
-    static TimeSpan Total(IEnumerable<Interval> intervals) =>
+    private static TimeSpan Total(IEnumerable<Interval> intervals) =>
         intervals.Aggregate(TimeSpan.Zero, (sum, i) => sum + i.Duration);
 
-    static decimal Hours(TimeSpan span) =>
+    private static decimal Hours(TimeSpan span) =>
         Math.Round((decimal)span.TotalHours, 2, MidpointRounding.ToEven);
 }

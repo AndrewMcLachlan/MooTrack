@@ -36,9 +36,9 @@ public static class CsvFormat
         week.PartialDays.ToString(CultureInfo.InvariantCulture),
         week.UnreliableDays.ToString(CultureInfo.InvariantCulture));
 
-    static string Time(TimeOnly? value) =>
+    private static string Time(TimeOnly? value) =>
         value?.ToString("HH:mm:ss", CultureInfo.InvariantCulture) ?? String.Empty;
 
-    static string Hours(decimal value) =>
+    private static string Hours(decimal value) =>
         value.ToString("0.00", CultureInfo.InvariantCulture);
 }

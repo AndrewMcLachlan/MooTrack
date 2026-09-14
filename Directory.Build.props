@@ -1,0 +1,16 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Major.Minor only. CI derives the patch from the number of commits since this
+         line last changed, so unrelated edits to this file do not reset it. Set
+         VersionSuffix (e.g. beta) for a prerelease line. -->
+    <VersionPrefix>1.0</VersionPrefix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Without this the IDE style rules in .editorconfig are invisible to the
+         build, so a violation only ever shows up in someone's editor. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+</Project>

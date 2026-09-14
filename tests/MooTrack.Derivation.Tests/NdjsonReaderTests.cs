@@ -4,7 +4,7 @@ namespace MooTrack.Derivation.Tests;
 
 public class NdjsonReaderTests
 {
-    const string DisplayOnLine =
+    private const string DisplayOnLine =
         """
         {"tsUtc":"2026-08-17T22:14:03Z","tsOffset":"+10:00","unbiasedMs":123456,"host":"WORKSTATION","user":"user","event":"DisplayOn","source":"PowerNotify","dedupeKey":"abc","detail":""}
         """;

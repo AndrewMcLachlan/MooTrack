@@ -4,7 +4,7 @@ namespace MooTrack.Derivation.Tests;
 
 public class IntervalSetTests
 {
-    static DateTimeOffset At(int hour, int minute = 0) =>
+    private static DateTimeOffset At(int hour, int minute = 0) =>
         new(2026, 8, 17, hour, minute, 0, TimeSpan.FromHours(10));
 
     [Fact]
@@ -23,7 +23,7 @@ public class IntervalSetTests
 
 public class IntervalSetEdgeTests
 {
-    static DateTimeOffset At(int hour, int minute = 0) =>
+    private static DateTimeOffset At(int hour, int minute = 0) =>
         new(2026, 8, 17, hour, minute, 0, TimeSpan.FromHours(10));
 
     [Fact]

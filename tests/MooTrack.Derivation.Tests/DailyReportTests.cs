@@ -4,12 +4,12 @@ namespace MooTrack.Derivation.Tests;
 
 public class DailyReportTests
 {
-    static readonly TimeSpan Offset = TimeSpan.FromHours(10);
+    private static readonly TimeSpan Offset = TimeSpan.FromHours(10);
 
-    static DateTimeOffset At(int day, int hour, int minute = 0) =>
+    private static DateTimeOffset At(int day, int hour, int minute = 0) =>
         new(2026, 8, day, hour, minute, 0, Offset);
 
-    static readonly DerivationOptions Defaults = new();
+    private static readonly DerivationOptions Defaults = new();
 
     [Fact]
     public void Build_TwoSessionsWithLunch_ReportsActiveSpanAndBreak()

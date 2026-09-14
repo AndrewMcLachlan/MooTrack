@@ -5,20 +5,11 @@ namespace MooTrack.Derivation.Tests;
 
 public class WeeklyAcceptanceTests
 {
-    static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "docs", "data")))
-            dir = dir.Parent;
-        return dir?.FullName ?? throw new InvalidOperationException("repo root not found");
-    }
-
-    [Fact]
+    [ValidationDataFact]
     public void DisplayOnlyModel_ReproducesWeeklyRollup()
     {
-        var root = RepoRoot();
-        var report = Path.Combine(root, "docs", "data", "raw", "sleepstudy28.html");
-        var validation = Path.Combine(root, "docs", "data", "weekly-hours-sleepstudy.csv");
+        var report = ValidationData.Path("raw", "sleepstudy28.html");
+        var validation = ValidationData.Path("weekly-hours-sleepstudy.csv");
         Assert.True(File.Exists(report), $"acceptance fixture missing: {report}");
 
         var active = SleepStudyReader.ReadActiveIntervals(report, TimeSpan.Zero);

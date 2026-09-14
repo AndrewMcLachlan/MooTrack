@@ -7,13 +7,16 @@ public sealed record WorkTimeline(
 
 public static class WorkIntervals
 {
-    static readonly ObservedEvent[] Departures =
+    private static readonly ObservedEvent[] Departures =
         [ObservedEvent.UserInactive, ObservedEvent.Lock, ObservedEvent.Suspend];
 
-    static readonly ObservedEvent[] Returns =
+    // AgentStarted and AgentStopped are deliberately absent from both lists. They
+    // describe the recorder, not the person: treating a restart as a return would end
+    // a break at the restart rather than when the user actually came back.
+    private static readonly ObservedEvent[] Returns =
         [ObservedEvent.UserPresent, ObservedEvent.Unlock, ObservedEvent.Resume, ObservedEvent.DisplayOn];
 
-    static readonly ObservedEvent[] Confirmations =
+    private static readonly ObservedEvent[] Confirmations =
         [ObservedEvent.UserPresent, ObservedEvent.Unlock];
 
     public static WorkTimeline Build(
@@ -40,7 +43,7 @@ public static class WorkIntervals
         return new WorkTimeline(active, covered, gaps);
     }
 
-    static List<Interval> DisplayOn(List<Observation> ordered)
+    private static List<Interval> DisplayOn(List<Observation> ordered)
     {
         var lit = new List<Interval>();
         DateTimeOffset? opened = null;
@@ -61,7 +64,7 @@ public static class WorkIntervals
         return lit;
     }
 
-    static List<Interval> Confirmed(
+    private static List<Interval> Confirmed(
         List<Interval> lit, List<Observation> ordered, DerivationOptions options)
     {
         var confirmations = ordered
@@ -73,7 +76,7 @@ public static class WorkIntervals
             at => at >= span.Start && at <= span.Start + options.ConfirmationWindow))];
     }
 
-    static List<Interval> AwayEpisodes(List<Observation> ordered)
+    private static List<Interval> AwayEpisodes(List<Observation> ordered)
     {
         var episodes = new List<Interval>();
         DateTimeOffset? left = null;
@@ -97,7 +100,7 @@ public static class WorkIntervals
 
     // Only the tick proves the recorder was alive; a quiet period between real
     // events is not evidence of an outage, and billing it as one loses real hours.
-    static List<Interval> Coverage(List<Observation> ordered, DerivationOptions options)
+    private static List<Interval> Coverage(List<Observation> ordered, DerivationOptions options)
     {
         var ticks = ordered
             .Where(o => o.Event == ObservedEvent.Tick)
@@ -128,10 +131,10 @@ public static class WorkIntervals
         return covered;
     }
 
-    static DateTimeOffset Earliest(DateTimeOffset a, DateTimeOffset b) => a < b ? a : b;
+    private static DateTimeOffset Earliest(DateTimeOffset a, DateTimeOffset b) => a < b ? a : b;
 
-    static DateTimeOffset Latest(DateTimeOffset a, DateTimeOffset b) => a > b ? a : b;
+    private static DateTimeOffset Latest(DateTimeOffset a, DateTimeOffset b) => a > b ? a : b;
 
-    static List<Interval> Between(List<Interval> covered) =>
+    private static List<Interval> Between(List<Interval> covered) =>
         [.. covered.Zip(covered.Skip(1), (a, b) => new Interval(a.End, b.Start))];
 }

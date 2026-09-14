@@ -4,7 +4,7 @@ namespace MooTrack.Derivation.Tests;
 
 public class CsvFormatTests
 {
-    static readonly DayRecord Worked = new()
+    private static readonly DayRecord Worked = new()
     {
         Date = new DateOnly(2026, 8, 17),
         FirstActive = new TimeOnly(8, 14, 37),

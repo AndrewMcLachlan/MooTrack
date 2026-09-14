@@ -25,7 +25,7 @@ public static class WeeklyReport
             .Select(Roll)
     ];
 
-    static WeekRecord Roll(IGrouping<int, DayRecord> week)
+    private static WeekRecord Roll(IGrouping<int, DayRecord> week)
     {
         var worked = week.Where(d => d.ActiveHours > 0m).ToList();
         var active = week.Sum(d => d.ActiveHours);
@@ -44,7 +44,7 @@ public static class WeeklyReport
         };
     }
 
-    static DateTime ToDateTime(DateOnly date) => date.ToDateTime(TimeOnly.MinValue);
+    private static DateTime ToDateTime(DateOnly date) => date.ToDateTime(TimeOnly.MinValue);
 
-    static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.ToEven);
+    private static decimal Round(decimal value) => Math.Round(value, 2, MidpointRounding.ToEven);
 }

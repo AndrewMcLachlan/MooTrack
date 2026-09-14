@@ -4,9 +4,9 @@ namespace MooTrack.Derivation.Tests;
 
 public class DayShapingTests
 {
-    static readonly TimeSpan Offset = TimeSpan.FromHours(10);
+    private static readonly TimeSpan Offset = TimeSpan.FromHours(10);
 
-    static DateTimeOffset At(int day, int hour, int minute = 0) =>
+    private static DateTimeOffset At(int day, int hour, int minute = 0) =>
         new(2026, 8, day, hour, minute, 0, Offset);
 
     [Fact]

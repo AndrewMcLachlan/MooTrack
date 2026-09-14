@@ -26,7 +26,7 @@ public static class NdjsonReader
         return new ObservationLog(observations, malformed);
     }
 
-    static Observation? TryParse(string line)
+    private static Observation? TryParse(string line)
     {
         try
         {
@@ -57,10 +57,10 @@ public static class NdjsonReader
         }
     }
 
-    static string Text(JsonElement root, string name) =>
+    private static string Text(JsonElement root, string name) =>
         root.TryGetProperty(name, out var value) ? value.GetString() ?? String.Empty : String.Empty;
 
-    static TimeSpan Offset(string value) =>
+    private static TimeSpan Offset(string value) =>
         String.IsNullOrEmpty(value)
             ? TimeSpan.Zero
             : TimeSpan.Parse(value.TrimStart('+'), CultureInfo.InvariantCulture);

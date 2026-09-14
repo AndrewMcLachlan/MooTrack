@@ -4,10 +4,10 @@ namespace MooTrack.Derivation.Tests;
 
 public class WeeklyReportTests
 {
-    static readonly TimeSpan Offset = TimeSpan.FromHours(10);
-    static readonly DerivationOptions Defaults = new();
+    private static readonly TimeSpan Offset = TimeSpan.FromHours(10);
+    private static readonly DerivationOptions Defaults = new();
 
-    static DateTimeOffset At(int day, int hour) =>
+    private static DateTimeOffset At(int day, int hour) =>
         new(2026, 8, day, hour, 0, 0, Offset);
 
     [Fact]

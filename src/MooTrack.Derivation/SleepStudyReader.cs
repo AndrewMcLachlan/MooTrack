@@ -35,16 +35,16 @@ public static partial class SleepStudyReader
         return intervals;
     }
 
-    static IEnumerable<Dictionary<string, string>> Elements(string block, string tag) =>
+    private static IEnumerable<Dictionary<string, string>> Elements(string block, string tag) =>
         Regex.Matches(block, $@"<{tag}\s(.*?)>", RegexOptions.Singleline)
             .Select(m => AttributePattern().Matches(m.Groups[1].Value)
                 .ToDictionary(a => a.Groups[1].Value, a => a.Groups[2].Value));
 
-    static DateTimeOffset Timestamp(string value, TimeSpan offset) =>
+    private static DateTimeOffset Timestamp(string value, TimeSpan offset) =>
         new(DateTime.ParseExact(value, "yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture), offset);
 
     // Duration is in 100ns ticks; a wrong unit here silently rescales every day's hours.
-    static TimeSpan Ticks(string value) =>
+    private static TimeSpan Ticks(string value) =>
         TimeSpan.FromTicks((long)Double.Parse(value, CultureInfo.InvariantCulture));
 
     [GeneratedRegex(@"(\w+)=""([^""]*)""")]
