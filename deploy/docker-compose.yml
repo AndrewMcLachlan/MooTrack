@@ -1,4 +1,4 @@
-# the NAS (Synology DS918+, Container Manager).
+# Synology NAS (DS918+, Container Manager). Replace the host name to suit.
 #
 # Verify the bind mount actually attached before trusting a day of data:
 #   docker inspect mootrack-collector --format '{{json .Mounts}}'

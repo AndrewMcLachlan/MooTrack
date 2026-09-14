@@ -15,7 +15,7 @@ aggregates are not sufficient.
 
 | Fact | Value |
 |---|---|
-| Machine | `WORKSTATION` |
+| Machine | Windows laptop, referred to here as `WORKSTATION` |
 | OS | Windows 11, build 26100.9106 |
 | Join state | Entra-joined only. No domain GPO applied (local GPO only) |
 | Audit policy control | **Not** MDM-managed — no `PolicyManager\current\device\Audit` node |
@@ -113,7 +113,7 @@ process to also fail.
 
 ### 2. Collector (build second)
 
-Runs on the NAS (`the NAS`, Synology DS918+, amd64, Container Manager).
+Runs on the NAS (Synology DS918+, amd64, Container Manager).
 
 The API exists **because LocalSystem cannot authenticate to the Synology** — it
 presents the machine account, which means nothing to the NAS. An outbound HTTP
