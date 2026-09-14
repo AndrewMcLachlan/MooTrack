@@ -19,7 +19,6 @@ public sealed class HoursQueryTests : IAsyncLifetime, IDisposable
         {
             builder.UseSetting("MOOTRACK_API_KEY", Key);
             builder.UseSetting("MooTrack:RawRoot", Path.Combine(_root, "raw"));
-            builder.UseSetting("MooTrack:MirrorRoot", "");
             builder.UseSetting("MooTrack:ReportRoot", Path.Combine(_root, "reports"));
             builder.UseSetting("MooTrack:RegenerateDebounceSeconds", "0");
         });

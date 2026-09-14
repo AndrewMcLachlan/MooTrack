@@ -18,10 +18,7 @@ builder.Services.PostConfigure<CollectorOptions>(options =>
 builder.Services.AddSingleton(provider =>
 {
     var settings = provider.GetRequiredService<IOptions<CollectorOptions>>().Value;
-    return new RawStore(
-        settings.RawRoot,
-        String.IsNullOrWhiteSpace(settings.MirrorRoot) ? null : settings.MirrorRoot,
-        provider.GetRequiredService<ILogger<RawStore>>());
+    return new RawStore(settings.RawRoot);
 });
 builder.Services.AddSingleton<ReportRegenerator>();
 
@@ -34,8 +31,19 @@ if (String.IsNullOrWhiteSpace(configured.ApiKey))
     return 1;
 }
 
-var probe = app.Services.GetRequiredService<RawStore>().WriteMountProbe();
-app.Logger.LogInformation("mount probe written: {Probe}", probe);
+// A bind mount that failed to attach leaves a writable directory in its place, so
+// the collector would run for weeks and lose everything when the container is next
+// recreated. Refuse to start instead.
+if (configured.RequireMountedRawRoot && !MountPoints.IsMounted(configured.RawRoot))
+{
+    app.Logger.LogCritical(
+        "{Path} is not a mount point. The volume did not attach; anything written "
+        + "there would be lost when this container is recreated.", configured.RawRoot);
+    return 1;
+}
+
+Directory.CreateDirectory(configured.RawRoot);
+Directory.CreateDirectory(configured.ReportRoot);
 
 app.MapPost("/observations", async (
     HttpRequest request,
@@ -64,20 +72,18 @@ app.MapPost("/observations", async (
 
 app.MapGet("/health", (RawStore store, ReportRegenerator regenerator) =>
 {
-    var files = Directory.Exists(store.PrimaryRoot)
-        ? Directory.GetFiles(store.PrimaryRoot, "*.ndjson", SearchOption.AllDirectories)
+    var files = Directory.Exists(store.Root)
+        ? Directory.GetFiles(store.Root, "*.ndjson", SearchOption.AllDirectories)
         : [];
 
     return Results.Ok(new
     {
         status = "ok",
-        rawRoot = store.PrimaryRoot,
-        mirrorRoot = store.MirrorRoot,
+        rawRoot = store.Root,
         files = files.Length,
         newestObservationFile = files.Length == 0
             ? null
             : files.Select(f => new FileInfo(f).LastWriteTimeUtc).Max().ToString("O"),
-        mountProbe = ProbeContent(store),
         lastRegeneration = regenerator.LastRun == DateTimeOffset.MinValue
             ? null
             : regenerator.LastRun.ToString("O"),
@@ -171,11 +177,5 @@ static bool Authorised(HttpRequest request, string expected) =>
     && CryptographicOperations.FixedTimeEquals(
         Encoding.UTF8.GetBytes(provided.ToString()),
         Encoding.UTF8.GetBytes(expected));
-
-static string? ProbeContent(RawStore store)
-{
-    var path = Path.Combine(store.PrimaryRoot, RawStore.ProbeFileName);
-    return File.Exists(path) ? File.ReadAllText(path).Trim() : null;
-}
 
 public partial class Program;

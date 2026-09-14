@@ -21,7 +21,6 @@ public sealed class IngestEndpointTests : IDisposable
         {
             builder.UseSetting("MOOTRACK_API_KEY", Key);
             builder.UseSetting("MooTrack:RawRoot", Path.Combine(_root, "raw"));
-            builder.UseSetting("MooTrack:MirrorRoot", Path.Combine(_root, "mirror"));
             builder.UseSetting("MooTrack:ReportRoot", Path.Combine(_root, "reports"));
             builder.UseSetting("MooTrack:RegenerateDebounceSeconds", "0");
         });
@@ -126,14 +125,13 @@ public sealed class IngestEndpointTests : IDisposable
     }
 
     [Fact]
-    public async Task Health_IsOpenAndReportsTheMountProbe()
+    public async Task Health_IsOpenWithoutAKey()
     {
         var response = await _factory.CreateClient().GetAsync("/health");
 
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("ok", result.GetProperty("status").GetString());
-        Assert.False(String.IsNullOrWhiteSpace(result.GetProperty("mountProbe").GetString()));
     }
 
     [Fact]

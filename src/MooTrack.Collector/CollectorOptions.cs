@@ -6,7 +6,7 @@ public sealed class CollectorOptions
 
     public string RawRoot { get; set; } = "/data/raw";
 
-    public string? MirrorRoot { get; set; } = "/mirror/raw";
+    public bool RequireMountedRawRoot { get; set; }
 
     public string ReportRoot { get; set; } = "/data/reports";
 

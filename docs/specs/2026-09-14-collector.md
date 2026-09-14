@@ -43,26 +43,34 @@ observations over one bad line loses record that cannot be recreated.
 Append-only NDJSON, one file per host per local day, under `RawRoot`. Flushed to
 disk per write, never rewritten.
 
-Dedupe is on `(host, event, timestamp-to-second)`, per the brief — computed by
+Dedupe is on `(host, event, timestamp-to-second)` — computed by
 the collector from the parsed observation rather than trusting the agent's
 `dedupeKey`. Keys for a day are loaded from disk on first touch, so idempotency
 survives a restart. This is what makes the agent's retry-until-accepted shipping
 safe: a batch that is delivered but whose response is lost can be sent again
 without duplicating anything.
 
-## Mirror and mount probe
+## The mount check
 
-Writes are mirrored to a container-local volume. A bind mount that silently
-fails to attach is indistinguishable from one that works until the container is
-recreated and the data is gone.
+A bind mount that fails to attach is not an error. Docker leaves the container's own
+directory in its place — writable, empty, and indistinguishable from the real thing.
+The collector would run for weeks and lose everything the next time the container
+was recreated.
 
-On startup the collector writes `mount-probe.txt` to `RawRoot` containing a
-unique token, and `/health` reports that token. If the token is not visible on
-the NAS share itself, the bind mount is not attached. Per gotcha 7, the image
-declares no `VOLUME` directives, which would otherwise shadow the bind mounts.
+So at startup, when `RequireMountedRawRoot` is set, `RawRoot` is checked against
+`/proc/self/mountinfo` and the collector **refuses to start** if it is not a mount
+point. The image sets that flag, so the check is on exactly where it matters and off
+for local runs and tests.
 
-A failed mirror write logs and continues; a failed primary write fails the
-request, so the agent keeps the batch and retries.
+That replaced an earlier design that mirrored every write to a container-local
+volume. Duplicating data in a second place is a worse answer than not making the
+mistake: the copy costs storage forever, is never read, and still leaves a
+misconfigured deployment running.
+
+Per gotcha 7, the image declares no `VOLUME` directives, which would shadow the bind
+mounts.
+
+A failed write fails the request, so the agent keeps the batch and retries.
 
 ## Derivation
 
@@ -73,7 +81,7 @@ record, reports are derived.
 
 `GET /hours` recomputes on demand under thresholds supplied per request —
 `bridge`, `confirm`, `gap`, and a `from`/`to` range — and answers without
-touching the stored reports. This is what the brief means by the idle threshold
+touching the stored reports. This is what is meant by the idle threshold
 being a query-time parameter: the same raw record can be read under different
 assumptions, and the answer carries the parameters that produced it.
 
@@ -90,7 +98,7 @@ Environment variables. `MOOTRACK_API_KEY` for the key; everything else as
 | Key | Default |
 |---|---|
 | `RawRoot` | `/data/raw` |
-| `MirrorRoot` | `/mirror/raw` |
+| `RequireMountedRawRoot` | false; the image sets it true |
 | `ReportRoot` | `/data/reports` |
 | `RegenerateDebounceSeconds` | 60 |
 | `BridgeMinutes` | 10 |
@@ -121,14 +129,14 @@ to `main` or manual dispatch.
 ## Verified
 
 The real agent was run against the real collector over HTTP. Observations shipped
-with `X-Api-Key`, raw NDJSON landed under the host directory, the mirror copy
-matched byte for byte, reports regenerated automatically, and re-posting an
-identical batch returned `{"accepted":0,"duplicates":9}`.
+with `X-Api-Key`, raw NDJSON landed under the host directory, reports regenerated
+automatically, and re-posting an identical batch returned
+`{"accepted":0,"duplicates":9}`.
 
-The image was built and run: health and mount probe visible on the host bind
-mount, a posted day derived to 7.50 active hours against 8.50 span, a valid
-workbook with Daily, Weekly and Method sheets generated inside the container,
-mirror byte-identical, running as uid 1654, and `Config.Volumes` null so no
+The image was built and run both ways: with the volumes mounted it serves, ingests
+and derives a posted day to 7.50 active hours against 8.50 span, writing a valid
+workbook inside the container; with the volumes omitted it logs the path and exits
+rather than starting. It runs as uid 1654, and `Config.Volumes` is null so no
 `VOLUME` shadows a bind mount.
 
 ## Not doing

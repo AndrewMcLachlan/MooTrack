@@ -9,16 +9,12 @@ public sealed record IngestResult(int Accepted, int Duplicates);
 /// <summary>
 /// The durable store: append-only NDJSON, one file per host per local day.
 /// </summary>
-public sealed class RawStore(string primaryRoot, string? mirrorRoot, ILogger<RawStore> logger)
+public sealed class RawStore(string root)
 {
-    public const string ProbeFileName = "mount-probe.txt";
-
     private readonly Dictionary<string, HashSet<string>> _seen = [];
     private readonly Lock _gate = new();
 
-    public string PrimaryRoot => primaryRoot;
-
-    public string? MirrorRoot => mirrorRoot;
+    public string Root => root;
 
     public IngestResult Append(IEnumerable<Observation> observations)
     {
@@ -53,27 +49,14 @@ public sealed class RawStore(string primaryRoot, string? mirrorRoot, ILogger<Raw
 
     public IEnumerable<Observation> Observations()
     {
-        if (!Directory.Exists(primaryRoot)) return [];
+        if (!Directory.Exists(root)) return [];
 
         var lines = Directory
-            .GetFiles(primaryRoot, "*.ndjson", SearchOption.AllDirectories)
+            .GetFiles(root, "*.ndjson", SearchOption.AllDirectories)
             .Order()
             .SelectMany(File.ReadLines);
 
         return NdjsonReader.Parse(lines).Observations;
-    }
-
-    /// <summary>
-    /// A bind mount that quietly fails to attach looks identical to one that works,
-    /// until the day the container is recreated and the data is gone. This writes a
-    /// file whose content can be checked from the NAS side to prove the mount is real.
-    /// </summary>
-    public string WriteMountProbe()
-    {
-        var token = $"{Environment.MachineName}:{DateTimeOffset.UtcNow:O}";
-        Directory.CreateDirectory(primaryRoot);
-        File.WriteAllText(Path.Combine(primaryRoot, ProbeFileName), token + Environment.NewLine);
-        return token;
     }
 
     private static string FileKey(Observation observation) =>
@@ -98,7 +81,7 @@ public sealed class RawStore(string primaryRoot, string? mirrorRoot, ILogger<Raw
         if (_seen.TryGetValue(fileKey, out var keys)) return keys;
 
         keys = [];
-        var path = Path.Combine(primaryRoot, fileKey);
+        var path = Path.Combine(root, fileKey);
 
         if (File.Exists(path))
             foreach (var observation in NdjsonReader.Parse(File.ReadLines(path)).Observations)
@@ -110,26 +93,13 @@ public sealed class RawStore(string primaryRoot, string? mirrorRoot, ILogger<Raw
 
     private void AppendLines(string fileKey, List<string> lines)
     {
+        var path = Path.Combine(root, fileKey);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
         var payload = String.Concat(lines.Select(l => l + "\n"));
 
-        Write(primaryRoot, fileKey, payload, required: true);
-        if (mirrorRoot is not null) Write(mirrorRoot, fileKey, payload, required: false);
-    }
-
-    private void Write(string root, string fileKey, string payload, bool required)
-    {
-        var path = Path.Combine(root, fileKey);
-
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            using var file = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
-            file.Write(Encoding.UTF8.GetBytes(payload));
-            file.Flush(flushToDisk: true);
-        }
-        catch (Exception e) when (!required)
-        {
-            logger.LogError(e, "mirror write to {Path} failed; the primary copy is intact", path);
-        }
+        using var file = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read);
+        file.Write(Encoding.UTF8.GetBytes(payload));
+        file.Flush(flushToDisk: true);
     }
 }

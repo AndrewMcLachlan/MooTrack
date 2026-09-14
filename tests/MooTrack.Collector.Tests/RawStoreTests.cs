@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging.Abstractions;
 using MooTrack.Collector;
 using MooTrack.Derivation;
 
@@ -11,10 +10,8 @@ public sealed class RawStoreTests : IDisposable
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     private string Primary => Path.Combine(_root, "share");
-    private string Mirror => Path.Combine(_root, "mirror");
 
-    private RawStore Build(bool mirrored = false) =>
-        new(Primary, mirrored ? Mirror : null, NullLogger<RawStore>.Instance);
+    private RawStore Build() => new(Primary);
 
     private static Observation At(int hour, int minute, ObservedEvent observed, string host = "WAU") =>
         new()
@@ -92,16 +89,6 @@ public sealed class RawStoreTests : IDisposable
     }
 
     [Fact]
-    public void Append_WithMirrorConfigured_WritesBothCopies()
-    {
-        Build(mirrored: true).Append([At(9, 0, ObservedEvent.DisplayOn)]);
-
-        Assert.Equal(
-            File.ReadAllLines(Path.Combine(Primary, "WAU", "2026-09-14.ndjson")),
-            File.ReadAllLines(Path.Combine(Mirror, "WAU", "2026-09-14.ndjson")));
-    }
-
-    [Fact]
     public void Observations_ReadsBackEverythingStored()
     {
         var store = Build();
@@ -114,15 +101,4 @@ public sealed class RawStoreTests : IDisposable
             read.Select(o => o.Event));
     }
 
-    [Fact]
-    public void WriteMountProbe_LeavesAFileTheShareCanBeCheckedFor()
-    {
-        var store = Build();
-
-        var probe = store.WriteMountProbe();
-
-        var path = Path.Combine(Primary, RawStore.ProbeFileName);
-        Assert.True(File.Exists(path));
-        Assert.Contains(probe, File.ReadAllText(path));
-    }
 }
