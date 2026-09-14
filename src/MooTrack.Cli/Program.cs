@@ -1,5 +1,6 @@
 using MooTrack.Cli;
 using MooTrack.Derivation;
+using MooTrack.Reporting;
 
 const string Usage =
     """
@@ -23,13 +24,9 @@ try
     var days = Derive(arguments, out var malformed, out var gaps);
     var weeks = WeeklyReport.Build(days);
 
-    Write(Path.Combine(arguments.Output, "daily-hours.csv"),
-        CsvFormat.DailyHeader, days.Select(CsvFormat.Row));
-    Write(Path.Combine(arguments.Output, "weekly-hours.csv"),
-        CsvFormat.WeeklyHeader, weeks.Select(CsvFormat.Row));
-
-    var workbook = Path.Combine(arguments.Output, "mootrack-hours.xlsx");
-    Workbook.Write(workbook, days, weeks, arguments.Options);
+    ReportWriter.WriteAll(
+        arguments.Output, days, weeks, arguments.Options,
+        onWorkbookFailure: e => Console.Error.WriteLine(e.Message));
 
     Report(days, weeks, malformed, gaps, arguments.Output);
     return 0;
@@ -79,13 +76,6 @@ static ObservationLog ReadObservations(string path)
         throw new InvalidDataException($"no .ndjson files in {path}");
 
     return NdjsonReader.Parse(files.SelectMany(File.ReadLines));
-}
-
-static void Write(string path, string header, IEnumerable<string> rows)
-{
-    var temporary = path + ".tmp";
-    File.WriteAllLines(temporary, rows.Prepend(header));
-    File.Move(temporary, path, overwrite: true);
 }
 
 static void Report(

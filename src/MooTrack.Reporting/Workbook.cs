@@ -1,7 +1,7 @@
 using ClosedXML.Excel;
 using MooTrack.Derivation;
 
-namespace MooTrack.Cli;
+namespace MooTrack.Reporting;
 
 public static class Workbook
 {
@@ -20,7 +20,7 @@ public static class Workbook
         Replace(path, workbook);
     }
 
-    static void Sheet(
+    private static void Sheet(
         XLWorkbook workbook, string name, string header, IEnumerable<string> rows)
     {
         var sheet = workbook.Worksheets.Add(name);
@@ -48,7 +48,7 @@ public static class Workbook
         sheet.Columns().AdjustToContents();
     }
 
-    static void Parameters(XLWorkbook workbook, DerivationOptions options)
+    private static void Parameters(XLWorkbook workbook, DerivationOptions options)
     {
         var sheet = workbook.Worksheets.Add("Method");
         var rows = new (string Name, string Value)[]
@@ -78,7 +78,7 @@ public static class Workbook
 
     // Excel holds an exclusive lock on an open workbook; writing in place would
     // truncate the file and lose the previous run with nothing to replace it.
-    static void Replace(string path, XLWorkbook workbook)
+    private static void Replace(string path, XLWorkbook workbook)
     {
         var temporary = Path.Combine(
             Path.GetDirectoryName(path) ?? ".",

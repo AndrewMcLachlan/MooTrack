@@ -72,15 +72,15 @@ public sealed record Arguments
         return parsed with { Options = options };
     }
 
-    static string Require(string name, string? value) =>
+    private static string Require(string name, string? value) =>
         value is null || value.StartsWith("--", StringComparison.Ordinal)
             ? throw new ArgumentException($"{name} needs a value")
             : value;
 
-    static TimeSpan Minutes(string value) =>
+    private static TimeSpan Minutes(string value) =>
         TimeSpan.FromMinutes(Double.Parse(value, CultureInfo.InvariantCulture));
 
-    static TimeSpan ParseOffset(string value) =>
+    private static TimeSpan ParseOffset(string value) =>
         value.StartsWith('-')
             ? -TimeSpan.Parse(value[1..], CultureInfo.InvariantCulture)
             : TimeSpan.Parse(value.TrimStart('+'), CultureInfo.InvariantCulture);
