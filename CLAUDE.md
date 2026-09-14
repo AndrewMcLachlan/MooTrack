@@ -55,9 +55,11 @@ These cost real time to find. They are not obvious from the code.
 6. **The agent's own lifecycle is not user activity.** `AgentStarted` and
    `AgentStopped` are deliberately absent from the departure and return sets;
    treating a restart as a return ends a break early and bills time not worked.
-7. **A bind mount that fails to attach looks exactly like one that works** until
-   the container is recreated and the data is gone. Hence the mount probe, and
-   hence no `VOLUME` directives, which shadow bind mounts.
+7. **A misconfigured mount looks exactly like a working one.** A bind mount that
+   fails to attach leaves a writable directory in its place; one the container
+   cannot write to still passes a health check. Both are proved at startup and
+   both refuse to start, because neither is visible from inside afterwards. No
+   `VOLUME` directives either — they shadow bind mounts.
 8. **Fringe sessions distort start and finish.** An isolated sub-five-minute
    session hours after the rest moves a day's finish by hours. Count them in
    totals; exclude them when deriving start and finish.

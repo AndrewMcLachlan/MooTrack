@@ -42,8 +42,27 @@ if (configured.RequireMountedRawRoot && !MountPoints.IsMounted(configured.RawRoo
     return 1;
 }
 
-Directory.CreateDirectory(configured.RawRoot);
-Directory.CreateDirectory(configured.ReportRoot);
+// Unwritable storage is invisible to a health check: the collector starts, reports
+// healthy, and fails every ingest. Prove it here instead.
+var uid = Environment.GetEnvironmentVariable("APP_UID") ?? "the container user";
+
+if (!StorageCheck.IsWritable(configured.RawRoot))
+{
+    app.Logger.LogCritical(
+        "Cannot write to {Path} as uid {Uid}. Give the mounted directory to that "
+        + "user on the host and start again: {Remedy}",
+        configured.RawRoot, uid, $"chown -R {uid}:{uid} <host path>");
+    return 1;
+}
+
+// Reports are derived and can be rebuilt, so an unwritable report directory is worth
+// shouting about but not worth refusing the observations that are still arriving.
+if (!StorageCheck.IsWritable(configured.ReportRoot))
+{
+    app.Logger.LogCritical(
+        "Cannot write to {Path}; observations will be stored but no reports produced.",
+        configured.ReportRoot);
+}
 
 app.MapPost("/observations", async (
     HttpRequest request,

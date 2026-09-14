@@ -1,10 +1,11 @@
 services:
   collector:
     image: ghcr.io/andrewmclachlan/mootrack-collector:latest
-    container_name: mootrack-collector
+    hostname: mootrack
     restart: unless-stopped
+    network_mode: bridge
     ports:
-      - "8088:8080"
+      - '8088:8080/tcp'
     environment:
       MOOTRACK_API_KEY: "${MOOTRACK_API_KEY:?set MOOTRACK_API_KEY}"
       MooTrack__RawRoot: /data/raw
@@ -14,5 +15,5 @@ services:
       MooTrack__GapToleranceMinutes: "5"
       MooTrack__RegenerateDebounceSeconds: "60"
     volumes:
-      - /volume1/docker/mootrack/raw:/data/raw
-      - /volume1/docker/mootrack/reports:/data/reports
+      - /volume1/docker/moo-track/data/raw:/data/raw
+      - /volume1/docker/moo-track/data/reports:/data/reports

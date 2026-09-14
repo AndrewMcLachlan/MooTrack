@@ -67,6 +67,15 @@ volume. Duplicating data in a second place is a worse answer than not making the
 mistake: the copy costs storage forever, is never read, and still leaves a
 misconfigured deployment running.
 
+A directory the container cannot write to fails the same way for the same reason:
+the service starts, `/health` returns ok, and every ingest fails. So writability is
+proved at startup too, by writing and deleting a file, and the collector refuses to
+start if `RawRoot` fails. The message names the uid and the `chown` that fixes it,
+because the cause is never visible from inside the container.
+
+`ReportRoot` is checked but is not fatal. Reports are derived and can be rebuilt;
+refusing observations that are still arriving would be the wrong trade.
+
 Per gotcha 7, the image declares no `VOLUME` directives, which would shadow the bind
 mounts.
 
