@@ -103,7 +103,7 @@ public sealed class Worker(
             journal.Append(new Observation
             {
                 Timestamp = at,
-                UnbiasedMs = Monotonic(),
+                UnbiasedMs = MonotonicClock.Milliseconds(),
                 Event = signal.Event,
                 Host = _host,
                 User = _settings.User,
@@ -116,9 +116,6 @@ public sealed class Worker(
             logger.LogError(e, "failed to record {Event}", signal.Event);
         }
     }
-
-    private static long Monotonic() =>
-        Native.QueryUnbiasedInterruptTime(out var unbiased) ? (long)(unbiased / 10_000) : 0;
 
     public override void Dispose()
     {
