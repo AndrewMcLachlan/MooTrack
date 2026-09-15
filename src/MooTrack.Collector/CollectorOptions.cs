@@ -19,4 +19,6 @@ public sealed class CollectorOptions
     public int ConfirmationMinutes { get; set; } = 30;
 
     public int GapToleranceMinutes { get; set; } = 5;
+
+    public int RestartAllowanceMinutes { get; set; } = 30;
 }

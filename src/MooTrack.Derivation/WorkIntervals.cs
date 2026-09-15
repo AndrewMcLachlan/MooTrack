@@ -28,17 +28,22 @@ public static class WorkIntervals
         var covered = Coverage(ordered, options);
         var gaps = Between(covered);
 
-        var lit = Confirmed(DisplayOn(ordered), ordered, options);
+        var lit = Confirmed(DisplayOn(ordered), ordered, covered, options);
         var away = AwayEpisodes(ordered);
 
         var locks = options.BridgeAcrossLock
             ? []
             : ordered.Where(o => o.Event == ObservedEvent.Lock).Select(o => o.Timestamp);
 
-        var boundaries = locks.Concat(gaps.Select(g => g.Start)).ToList();
+        // Time the recorder did not observe cannot be billed, whatever the display was
+        // doing either side of it. Subtracting coverage gaps is what keeps an outage
+        // from being counted as work — except a short one with work either side, which
+        // is a restart the user sat through.
+        var unobserved = gaps.Where(g => g.Duration > options.RestartAllowance).ToList();
+        var observed = IntervalSet.Subtract(IntervalSet.Subtract(lit, away), unobserved);
+        var boundaries = locks.Concat(unobserved.Select(g => g.Start)).ToList();
 
-        var active = IntervalSet.Bridge(
-            IntervalSet.Subtract(lit, away), options.BridgeThreshold, boundaries);
+        var active = IntervalSet.Bridge(observed, options.BridgeThreshold, boundaries);
 
         return new WorkTimeline(active, covered, gaps);
     }
@@ -64,17 +69,50 @@ public static class WorkIntervals
         return lit;
     }
 
+    /// <summary>
+    /// A return is anchored where there is evidence of a person. An unconfirmed lead-in
+    /// is trimmed away, never the whole interval: one unexplained wake at the start of a
+    /// day must not discard the day.
+    /// </summary>
     private static List<Interval> Confirmed(
-        List<Interval> lit, List<Observation> ordered, DerivationOptions options)
+        List<Interval> lit, List<Observation> ordered, List<Interval> covered,
+        DerivationOptions options)
     {
         var confirmations = ordered
             .Where(o => Confirmations.Contains(o.Event))
             .Select(o => o.Timestamp)
             .ToList();
 
-        return [.. lit.Where(span => confirmations.Any(
-            at => at >= span.Start && at <= span.Start + options.ConfirmationWindow))];
+        var result = new List<Interval>();
+
+        foreach (var span in lit)
+        {
+            // Screen held on, with the recorder ticking, for longer than the window is
+            // itself evidence: a machine waking for maintenance does not do that.
+            if (Sustained(span, covered, options.ConfirmationWindow))
+            {
+                result.Add(span);
+                continue;
+            }
+
+            var confirmed = confirmations
+                .Where(at => at >= span.Start && at < span.End)
+                .Cast<DateTimeOffset?>()
+                .FirstOrDefault();
+
+            if (confirmed is not { } at) continue;
+
+            result.Add(at - span.Start <= options.ConfirmationWindow
+                ? span
+                : span with { Start = at });
+        }
+
+        return result;
     }
+
+    private static bool Sustained(Interval span, List<Interval> covered, TimeSpan window) =>
+        covered.Any(c => c.Start <= span.Start && c.End >= span.Start + window)
+        && span.Duration >= window;
 
     private static List<Interval> AwayEpisodes(List<Observation> ordered)
     {

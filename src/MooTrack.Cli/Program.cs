@@ -13,6 +13,7 @@ const string Usage =
       --fringe-max <min>     longest session treated as fringe (default 5)
       --fringe-gap <min>     isolation required for fringe (default 90)
       --gap-tolerance <min>  missing ticks before a recorder gap (default 5)
+      --restart-allowance <min>  outage still counted as work (default 30)
       --bridge-across-lock   treat an explicit lock as bridgeable
     """;
 
@@ -21,12 +22,17 @@ try
     var arguments = Arguments.Parse(args);
     Directory.CreateDirectory(arguments.Output);
 
-    var days = Derive(arguments, out var malformed, out var gaps);
+    var days = Derive(arguments, out var malformed, out var gaps, out var timeline);
     var weeks = WeeklyReport.Build(days);
 
     ReportWriter.WriteAll(
         arguments.Output, days, weeks, arguments.Options,
         onWorkbookFailure: e => Console.Error.WriteLine(e.Message));
+
+    ReportWriter.WriteCsv(
+        Path.Combine(arguments.Output, "timeline.csv"),
+        CsvFormat.TimelineHeader,
+        timeline.Select(CsvFormat.Row));
 
     Report(days, weeks, malformed, gaps, arguments.Output);
     return 0;
@@ -45,23 +51,24 @@ catch (Exception e) when (e is IOException or InvalidDataException)
 }
 
 static IReadOnlyList<DayRecord> Derive(
-    Arguments arguments, out int malformed, out int gaps)
+    Arguments arguments, out int malformed, out int gaps, out IReadOnlyList<TimelineEntry> timeline)
 {
     if (arguments.SleepStudy is { } report)
     {
         malformed = 0;
         gaps = 0;
-        return DailyReport.Build(
-            SleepStudyReader.ReadActiveIntervals(report, arguments.Offset),
-            arguments.Options);
+        var intervals = SleepStudyReader.ReadActiveIntervals(report, arguments.Offset);
+        timeline = DayTimeline.Build(intervals, []);
+        return DailyReport.Build(intervals, arguments.Options);
     }
 
     var log = ReadObservations(arguments.Ndjson!);
-    var timeline = WorkIntervals.Build(log.Observations, arguments.Options);
+    var observed = WorkIntervals.Build(log.Observations, arguments.Options);
 
     malformed = log.Malformed.Count;
-    gaps = timeline.Gaps.Count;
-    return DailyReport.Build(timeline, arguments.Options);
+    gaps = observed.Gaps.Count;
+    timeline = DayTimeline.Build(observed.Active, observed.Gaps);
+    return DailyReport.Build(observed, arguments.Options);
 }
 
 static ObservationLog ReadObservations(string path)

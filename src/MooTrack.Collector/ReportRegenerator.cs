@@ -25,6 +25,7 @@ public sealed class ReportRegenerator(
         BridgeThreshold = TimeSpan.FromMinutes(_settings.BridgeMinutes),
         ConfirmationWindow = TimeSpan.FromMinutes(_settings.ConfirmationMinutes),
         GapTolerance = TimeSpan.FromMinutes(_settings.GapToleranceMinutes),
+        RestartAllowance = TimeSpan.FromMinutes(_settings.RestartAllowanceMinutes),
     };
 
     public async Task<bool> RegenerateAsync(bool force, CancellationToken cancellationToken)

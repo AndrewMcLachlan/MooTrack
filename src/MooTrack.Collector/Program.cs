@@ -44,7 +44,7 @@ if (configured.RequireMountedRawRoot && !MountPoints.IsMounted(configured.RawRoo
 
 // Unwritable storage is invisible to a health check: the collector starts, reports
 // healthy, and fails every ingest. Prove it here instead.
-var uid = Environment.GetEnvironmentVariable("APP_UID") ?? "the container user";
+var uid = ProcessIdentity.EffectiveUser();
 
 if (!StorageCheck.IsWritable(configured.RawRoot))
 {
@@ -119,6 +119,7 @@ app.MapGet("/hours", (
     int? bridge,
     int? confirm,
     int? gap,
+    int? restart,
     DateOnly? from,
     DateOnly? to) =>
 {
@@ -129,6 +130,7 @@ app.MapGet("/hours", (
         BridgeThreshold = bridge is { } b ? TimeSpan.FromMinutes(b) : regenerator.Derivation.BridgeThreshold,
         ConfirmationWindow = confirm is { } c ? TimeSpan.FromMinutes(c) : regenerator.Derivation.ConfirmationWindow,
         GapTolerance = gap is { } g ? TimeSpan.FromMinutes(g) : regenerator.Derivation.GapTolerance,
+        RestartAllowance = restart is { } r ? TimeSpan.FromMinutes(r) : regenerator.Derivation.RestartAllowance,
     };
 
     var timeline = WorkIntervals.Build(store.Observations(), derivation);
@@ -144,6 +146,7 @@ app.MapGet("/hours", (
             bridgeMinutes = (int)derivation.BridgeThreshold.TotalMinutes,
             confirmationMinutes = (int)derivation.ConfirmationWindow.TotalMinutes,
             gapToleranceMinutes = (int)derivation.GapTolerance.TotalMinutes,
+            restartAllowanceMinutes = (int)derivation.RestartAllowance.TotalMinutes,
             fringeMaxMinutes = (int)derivation.FringeMaxDuration.TotalMinutes,
             fringeGapMinutes = (int)derivation.FringeGap.TotalMinutes,
         },

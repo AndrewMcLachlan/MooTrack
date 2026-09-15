@@ -74,4 +74,29 @@ public class CsvFormatTests
 
         Assert.Equal("2026-W34,2026-08-17,38.11,5,7.62,55.06,0,0", CsvFormat.Row(week));
     }
+
+    [Fact]
+    public void TimelineRow_WritesTheBlockAndItsCause()
+    {
+        var entry = new TimelineEntry(
+            new DateOnly(2026, 9, 15), TimelineKind.Break,
+            new Interval(
+                new DateTimeOffset(2026, 9, 15, 12, 10, 0, TimeSpan.FromHours(10)),
+                new DateTimeOffset(2026, 9, 15, 13, 17, 0, TimeSpan.FromHours(10))),
+            DayTimeline.Away);
+
+        Assert.Equal("2026-09-15,Tue,break,12:10:00,13:17:00,67,away", CsvFormat.Row(entry));
+    }
+
+    [Fact]
+    public void TimelineHeader_MatchesRowWidth()
+    {
+        var entry = new TimelineEntry(
+            new DateOnly(2026, 9, 15), TimelineKind.Work,
+            new Interval(DateTimeOffset.Now, DateTimeOffset.Now.AddHours(1)), String.Empty);
+
+        Assert.Equal(
+            CsvFormat.TimelineHeader.Split(',').Length,
+            CsvFormat.Row(entry).Split(',').Length);
+    }
 }

@@ -35,6 +35,7 @@ New-Item -ItemType Directory -Force -Path $OutputPath | Out-Null
 & $engine --ndjson $JournalPath --out $OutputPath --bridge $BridgeMinutes
 if ($LASTEXITCODE -ne 0) { throw "Derivation failed with exit code $LASTEXITCODE" }
 
+$timeline = Join-Path $OutputPath 'timeline.csv'
 $daily = Join-Path $OutputPath 'daily-hours.csv'
 if (Test-Path $daily) {
     Write-Host "`nDaily" -ForegroundColor Cyan
@@ -44,8 +45,17 @@ if (Test-Path $daily) {
             @{n='last';e={$_.last_active}},
             @{n='active';e={$_.active_hours}},
             @{n='span';e={$_.span_hours}},
-            @{n='breaks';e={$_.longest_break_min}},
+            @{n='longest break (min)';e={$_.longest_break_min}},
             quality |
+        Format-Table -AutoSize
+}
+
+if (Test-Path $timeline) {
+    Write-Host "Day by day" -ForegroundColor Cyan
+    Import-Csv $timeline |
+        Select-Object date, weekday, kind,
+            @{n='from';e={$_.start}}, @{n='to';e={$_.end}},
+            @{n='mins';e={$_.minutes}}, cause |
         Format-Table -AutoSize
 }
 

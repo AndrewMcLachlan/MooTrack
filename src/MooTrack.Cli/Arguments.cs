@@ -54,6 +54,10 @@ public sealed record Arguments
                     options = options with { FringeGap = Minutes(Require(args[i], value)) };
                     i++;
                     break;
+                case "--restart-allowance":
+                    options = options with { RestartAllowance = Minutes(Require(args[i], value)) };
+                    i++;
+                    break;
                 case "--gap-tolerance":
                     options = options with { GapTolerance = Minutes(Require(args[i], value)) };
                     i++;

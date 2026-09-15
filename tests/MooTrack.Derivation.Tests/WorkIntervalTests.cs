@@ -141,4 +141,110 @@ public class WorkIntervalTests
             [new Interval(At(9), At(12)), new Interval(At(13), At(17))],
             active);
     }
+
+    private static WorkTimeline Timeline(params Observation[] observations) =>
+        WorkIntervals.Build(observations, Defaults);
+
+    private static Observation Tick(DateTimeOffset at) => Seen(ObservedEvent.Tick, at);
+
+    private static IEnumerable<Observation> Ticks(DateTimeOffset from, DateTimeOffset to)
+    {
+        for (var at = from; at <= to; at = at.AddMinutes(1)) yield return Tick(at);
+    }
+
+    // The machine was off. It cannot be billed, whatever the display was doing before.
+    [Fact]
+    public void Build_TimeWithNoTicks_IsNotBilled()
+    {
+        Observation[] observations =
+        [
+            Seen(ObservedEvent.DisplayOn, At(9)),
+            Seen(ObservedEvent.UserPresent, At(9)),
+            .. Ticks(At(9), At(10)),
+            .. Ticks(At(12), At(13)),
+            Seen(ObservedEvent.DisplayOff, At(13)),
+        ];
+
+        var active = WorkIntervals.Build(observations, Defaults).Active;
+
+        Assert.DoesNotContain(active, i => i.Start <= At(11) && i.End >= At(11));
+    }
+
+    // Thirty minutes of screen-on with the recorder ticking is use. A maintenance
+    // wake does not hold the display on; discarding this loses real working time.
+    [Fact]
+    public void Build_SustainedScreenOn_ConfirmsTheReturnWithoutAPresenceEvent()
+    {
+        Observation[] observations =
+        [
+            Seen(ObservedEvent.DisplayOn, At(8)),
+            .. Ticks(At(8), At(9)),
+            Seen(ObservedEvent.DisplayOff, At(9)),
+        ];
+
+        var active = WorkIntervals.Build(observations, Defaults).Active;
+
+        Assert.Equal([new Interval(At(8), At(9))], active);
+    }
+
+    // Sitting at the desk while the machine restarts is working time. A short outage
+    // with work either side is a restart; a long one is a night, a weekend or leave,
+    // and nothing distinguishes those from absence.
+    [Fact]
+    public void Build_ShortOutageBetweenWorkingBlocks_IsCountedAsWork()
+    {
+        Observation[] observations =
+        [
+            Seen(ObservedEvent.DisplayOn, At(8)),
+            Seen(ObservedEvent.UserPresent, At(8)),
+            .. Ticks(At(8), At(8, 30)),
+            Seen(ObservedEvent.AgentStarted, At(8, 45)),
+            Seen(ObservedEvent.DisplayOn, At(8, 45)),
+            Seen(ObservedEvent.UserPresent, At(8, 46)),
+            .. Ticks(At(8, 45), At(17)),
+            Seen(ObservedEvent.DisplayOff, At(17)),
+        ];
+
+        var active = WorkIntervals.Build(observations, Defaults).Active;
+
+        Assert.Equal([new Interval(At(8), At(17))], active);
+    }
+
+    [Fact]
+    public void Build_OutageLongerThanTheAllowance_StaysExcluded()
+    {
+        Observation[] observations =
+        [
+            Seen(ObservedEvent.DisplayOn, At(8)),
+            Seen(ObservedEvent.UserPresent, At(8)),
+            .. Ticks(At(8), At(8, 30)),
+            Seen(ObservedEvent.AgentStarted, At(9, 15)),
+            Seen(ObservedEvent.DisplayOn, At(9, 15)),
+            Seen(ObservedEvent.UserPresent, At(9, 16)),
+            .. Ticks(At(9, 15), At(17)),
+            Seen(ObservedEvent.DisplayOff, At(17)),
+        ];
+
+        var active = WorkIntervals.Build(observations, Defaults).Active;
+
+        Assert.Equal(
+            [new Interval(At(8), At(8, 30)), new Interval(At(9, 15), At(17))],
+            active);
+    }
+
+    // An outage with nothing after it is not a restart. Nothing says the user stayed.
+    [Fact]
+    public void Build_OutageAtTheEndOfTheDay_IsNotCountedAsWork()
+    {
+        Observation[] observations =
+        [
+            Seen(ObservedEvent.DisplayOn, At(8)),
+            Seen(ObservedEvent.UserPresent, At(8)),
+            .. Ticks(At(8), At(16)),
+        ];
+
+        var active = WorkIntervals.Build(observations, Defaults).Active;
+
+        Assert.Equal([new Interval(At(8), At(16))], active);
+    }
 }
