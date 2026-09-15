@@ -27,20 +27,28 @@ public sealed class RawStore(string root)
             {
                 var keys = KnownKeys(group.Key);
                 var lines = new List<string>();
+                var fresh = new List<string>();
 
                 foreach (var observation in group)
                 {
-                    if (!keys.Add(DedupeKey(observation)))
+                    var key = DedupeKey(observation);
+                    if (keys.Contains(key) || fresh.Contains(key))
                     {
                         duplicates++;
                         continue;
                     }
 
+                    fresh.Add(key);
                     lines.Add(NdjsonWriter.Line(observation));
-                    accepted++;
                 }
 
                 if (lines.Count > 0) AppendLines(group.Key, lines);
+
+                // Only now. A write that throws must not leave the store believing it
+                // holds these: the sender would retry, every one would come back a
+                // duplicate, and the observations would never land anywhere.
+                foreach (var key in fresh) keys.Add(key);
+                accepted += fresh.Count;
             }
         }
 

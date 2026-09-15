@@ -16,9 +16,13 @@ public static class StorageCheck
         {
             Directory.CreateDirectory(path);
 
-            var probe = Path.Combine(path, $".mootrack-write-{Guid.NewGuid():N}");
-            File.WriteAllText(probe, String.Empty);
-            File.Delete(probe);
+            // Mirror what ingest does: a per-host subdirectory, then a file inside it.
+            // Probing only the top level would pass on a directory that permits writes
+            // but not mkdir, and the first observation would still be rejected.
+            var probe = Path.Combine(path, $".mootrack-probe-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(probe);
+            File.WriteAllText(Path.Combine(probe, "write"), String.Empty);
+            Directory.Delete(probe, recursive: true);
 
             return true;
         }
