@@ -40,7 +40,9 @@ public static class AgentServices
             return new JournalShipper(
                 settings.JournalRoot,
                 new PositionStore(settings.ShipmentPath),
-                new CollectorClient(client, settings.ApiKey),
+                new CollectorClient(
+                    client, settings.ApiKey,
+                    provider.GetRequiredService<ILogger<CollectorClient>>()),
                 settings.ShipBatchSize);
         });
 

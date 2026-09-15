@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.Logging.Abstractions;
 using MooTrack.Agent;
 
 namespace MooTrack.Agent.Tests;
@@ -26,7 +27,8 @@ public class CollectorClientTests
     }
 
     private static CollectorClient Build(Stub stub, string baseAddress = "https://collector.local/api/") =>
-        new(new HttpClient(stub) { BaseAddress = new Uri(baseAddress) }, "secret");
+        new(new HttpClient(stub) { BaseAddress = new Uri(baseAddress) }, "secret",
+            NullLogger<CollectorClient>.Instance);
 
     [Fact]
     public async Task Send_PostsNdjsonToTheObservationsEndpoint()
@@ -63,7 +65,9 @@ public class CollectorClientTests
     [Fact]
     public async Task Send_WhenTransportFails_DoesNotThrow()
     {
-        var client = new CollectorClient(new HttpClient(new Stub(HttpStatusCode.OK)), "secret");
+        var client = new CollectorClient(
+            new HttpClient(new Stub(HttpStatusCode.OK)), "secret",
+            NullLogger<CollectorClient>.Instance);
 
         var sent = await client.SendAsync(["one"], CancellationToken.None);
 

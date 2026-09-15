@@ -3,7 +3,8 @@ using System.Text;
 
 namespace MooTrack.Agent;
 
-public sealed class CollectorClient(HttpClient client, string apiKey) : ICollectorClient
+public sealed class CollectorClient(
+    HttpClient client, string apiKey, ILogger<CollectorClient> logger) : ICollectorClient
 {
     public async Task<bool> SendAsync(
         IReadOnlyList<string> lines, CancellationToken cancellationToken)
@@ -25,11 +26,20 @@ public sealed class CollectorClient(HttpClient client, string apiKey) : ICollect
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             using var response = await client.SendAsync(request, cancellationToken);
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode) return true;
+
+            logger.LogWarning(
+                "Collector rejected {Count} observations: {Status} {Reason}. They stay in "
+                + "the journal and will be sent again.",
+                lines.Count, (int)response.StatusCode, response.StatusCode);
+            return false;
         }
         catch (Exception e) when (e is HttpRequestException or InvalidOperationException
                                       or TaskCanceledException or UriFormatException)
         {
+            logger.LogWarning(
+                e, "Collector unreachable at {Uri}; {Count} observations stay in the journal.",
+                client.BaseAddress, lines.Count);
             return false;
         }
     }
